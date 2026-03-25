@@ -1,13 +1,13 @@
 # SAMFRIGGINGPT - Brutalist Terminal Chat
 
-A deliberately crude terminal-style web experience with Discord-based multi-user routing and enterprise-grade security.
+A deliberately crude terminal-style web experience with direct admin interface and enterprise-grade security.
 
 ## Features
 
 - **Brutalist Design**: Raw terminal aesthetic with ASCII art and monospace fonts
 - **Secure Authentication**: JWT tokens with bcrypt password hashing
-- **Discord Integration**: Thread-based routing for multiple users
-- **Paint Overlay**: Privileged drawing feature controlled via Discord commands
+- **Direct Admin Interface**: Built-in web panel for user management
+- **Paint Overlay**: Privileged drawing feature controlled via admin panel
 - **Rate Limiting**: Protection against brute force attacks
 - **WebSocket Chat**: Real-time messaging with character-by-character delivery
 - **SQLite Database**: Simple, reliable data storage with automated backups
@@ -24,11 +24,9 @@ npm install
 cp .env.example .env
 ```
 
-3. Configure Discord bot:
-   - Create a Discord bot at https://discord.com/developers/applications
-   - Enable Message Content intent
-   - Get bot token, channel ID, and your user ID
-   - Update `.env` with your credentials
+3. Configure server settings in `.env`:
+   - Set JWT secret (minimum 32 characters)
+   - Configure port and database path
 
 4. Create database directory:
 ```bash
@@ -45,12 +43,22 @@ For development with auto-reload:
 npm run dev
 ```
 
-## Discord Integration
+## Admin Interface
 
-The bot automatically creates private threads for each user:
-- New user messages create `User_Username` threads
-- Replies in threads route back to specific users
-- Paint permission command: `did you know you can paint over the site and shit`
+The built-in admin system provides complete user management:
+- Admin usernames: `sam`, `admin`, `samfrigginsen`
+- View all active users and their activity
+- Reply as SAM directly through web interface
+- Grant paint permissions to specific users
+- Real-time notifications for new messages
+
+## Paint Permission System
+
+Only admin users can grant paint permissions:
+1. Admin logs in with admin username
+2. Select user from admin panel
+3. Click "GRANT PAINT" button
+4. User receives paint capability immediately
 
 ## Security Features
 
@@ -59,14 +67,6 @@ The bot automatically creates private threads for each user:
 - **Password Hashing**: bcrypt with salt rounds
 - **JWT Authentication**: Secure session management
 - **Environment Variables**: Secrets never exposed in code
-
-## Paint Permission System
-
-Only the Discord owner (your user ID) can grant paint permissions:
-1. User sends message to site
-2. Bot creates `User_Username` thread
-3. Send `did you know you can paint over the site and shit` in that thread
-4. User receives paint capability in their browser session
 
 ## Backup System
 
@@ -86,12 +86,10 @@ For production deployment:
 
 ## Environment Variables
 
-- `DISCORD_BOT_TOKEN`: Your Discord bot token
-- `DISCORD_CHANNEL_ID`: Channel for thread creation
-- `DISCORD_USER_ID`: Your Discord user ID (for paint permissions)
 - `JWT_SECRET`: Minimum 32 characters for JWT signing
 - `PORT`: Server port (default: 3000)
 - `DB_PATH`: SQLite database file path
+- `NODE_ENV`: Environment (development/production)
 
 ## License
 

@@ -1,7 +1,7 @@
 {
   "name": "samfriggingpt",
   "version": "1.0.0",
-  "description": "Brutalist terminal chat with Discord routing",
+  "description": "Brutalist terminal chat with direct admin interface",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -14,7 +14,6 @@
     "sqlite3": "^5.1.6",
     "bcrypt": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
-    "discord.js": "^14.13.0",
     "express-rate-limit": "^6.10.0",
     "dompurify": "^3.0.5",
     "jsdom": "^22.1.0",
@@ -24,7 +23,7 @@
   "devDependencies": {
     "nodemon": "^3.0.1"
   },
-  "keywords": ["terminal", "chat", "discord", "brutalist"],
+  "keywords": ["terminal", "chat", "admin", "brutalist"],
   "author": "Sam",
   "license": "MIT"
 }
