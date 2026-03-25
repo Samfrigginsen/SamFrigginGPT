@@ -27,7 +27,6 @@ const db = new sqlite3.Database(process.env.DB_PATH || './database/samfriggingpt
 
 const userSockets = new Map();
 const userPaintPermissions = new Map();
-const adminUsers = new Set(['sam', 'admin', 'samfrigginsen']); // Admin usernames
 
 const limiter = rateLimit({
   windowMs: 60 * 1000,
@@ -56,13 +55,6 @@ function initializeDatabase() {
       content TEXT NOT NULL,
       is_from_sam INTEGER DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )`);
-    
-    db.run(`CREATE TABLE IF NOT EXISTS all_users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      username TEXT UNIQUE NOT NULL,
-      last_active DATETIME DEFAULT CURRENT_TIMESTAMP,
-      is_active INTEGER DEFAULT 1
     )`);
   });
 }
@@ -162,89 +154,14 @@ app.get('/api/paint-permission', authenticateToken, (req, res) => {
   res.json({ hasPermission });
 });
 
-app.get('/api/admin/users', authenticateToken, (req, res) => {
-  if (!adminUsers.has(req.user.username)) {
-    return res.status(403).json({ error: '[ACCESS_DENIED] Admin required' });
-  }
-  
-  db.all('SELECT username, last_active FROM all_users ORDER BY last_active DESC', (err, users) => {
-    if (err) {
-      return res.status(500).json({ error: '[DATABASE_ERROR] Failed to load users' });
-    }
-    res.json(users);
-  });
-});
-
-app.get('/api/admin/messages/:username', authenticateToken, (req, res) => {
-  if (!adminUsers.has(req.user.username)) {
-    return res.status(403).json({ error: '[ACCESS_DENIED] Admin required' });
-  }
-  
-  const { username } = req.params;
-  db.all('SELECT * FROM messages WHERE username = ? ORDER BY created_at ASC', [username], (err, messages) => {
-    if (err) {
-      return res.status(500).json({ error: '[DATABASE_ERROR] Failed to load messages' });
-    }
-    res.json(messages);
-  });
-});
-
-app.post('/api/admin/reply', authenticateToken, (req, res) => {
-  if (!adminUsers.has(req.user.username)) {
-    return res.status(403).json({ error: '[ACCESS_DENIED] Admin required' });
-  }
-  
-  const { username, content } = req.body;
-  
-  if (!username || !content) {
-    return res.status(400).json({ error: '[INVALID_INPUT] Username and content required' });
-  }
-  
-  const sanitizedContent = dompurify.sanitize(content);
-  
-  db.run('INSERT INTO messages (username, content, is_from_sam) VALUES (?, ?, ?)', 
-    [username, sanitizedContent, 1], function(err) {
-    if (err) {
-      return res.status(500).json({ error: '[DATABASE_ERROR] Failed to save reply' });
-    }
-    
-    const message = {
-      id: this.lastID,
-      username: username,
-      content: sanitizedContent,
-      is_from_sam: 1,
-      created_at: new Date().toISOString()
-    };
-    
-    const userSocketId = userSockets.get(username);
-    if (userSocketId) {
-      io.to(userSocketId).emit('sam_response', message);
-    }
-    
-    res.json({ success: true, message });
-  });
-});
-
-app.post('/api/admin/grant-paint', authenticateToken, (req, res) => {
-  if (!adminUsers.has(req.user.username)) {
-    return res.status(403).json({ error: '[ACCESS_DENIED] Admin required' });
-  }
-  
-  const { username } = req.body;
-  
-  if (!username) {
-    return res.status(400).json({ error: '[INVALID_INPUT] Username required' });
-  }
-  
-  userPaintPermissions.set(username, true);
-  
-  const userSocketId = userSockets.get(username);
-  if (userSocketId) {
-    io.to(userSocketId).emit('paint_permission_granted');
-  }
-  
-  res.json({ success: true, message: '[PAINT_UNLOCK] Permission granted' });
-});
+// Mock Sam responses for testing
+const samResponses = [
+  "Interesting question. Let me process that...",
+  "I see what you're getting at. Here's my take:",
+  "From my perspective, that makes sense.",
+  "Have you considered the alternative approaches?",
+  "That reminds me of something important..."
+];
 
 io.on('connection', (socket) => {
   console.log(`[SOCKET_CONNECT] New connection: ${socket.id}`);
@@ -254,14 +171,8 @@ io.on('connection', (socket) => {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       userSockets.set(decoded.username, socket.id);
       socket.username = decoded.username;
-      socket.isAdmin = adminUsers.has(decoded.username);
-      
-      // Update user activity
-      db.run('INSERT OR REPLACE INTO all_users (username, last_active) VALUES (?, ?)', 
-        [decoded.username, new Date().toISOString()]);
-      
-      console.log(`[AUTH_SUCCESS] ${decoded.username} authenticated${socket.isAdmin ? ' (ADMIN)' : ''}`);
-      socket.emit('authenticated', { username: decoded.username, isAdmin: socket.isAdmin });
+      console.log(`[AUTH_SUCCESS] ${decoded.username} authenticated`);
+      socket.emit('authenticated', { username: decoded.username });
     } catch (error) {
       socket.emit('auth_error', { error: '[ACCESS_DENIED] Invalid token' });
       socket.disconnect();
@@ -293,17 +204,24 @@ io.on('connection', (socket) => {
       
       socket.emit('message_sent', message);
       
-      // Notify admin users about new message
-      adminUsers.forEach(adminUsername => {
-        const adminSocketId = userSockets.get(adminUsername);
-        if (adminSocketId && adminSocketId !== socket.id) {
-          io.to(adminSocketId).emit('new_user_message', {
-            username: socket.username,
-            content: sanitizedContent,
-            timestamp: new Date().toISOString()
-          });
-        }
-      });
+      // Mock Sam response after 2 seconds
+      setTimeout(() => {
+        const response = samResponses[Math.floor(Math.random() * samResponses.length)];
+        db.run('INSERT INTO messages (username, content, is_from_sam) VALUES (?, ?, ?)', 
+          [socket.username, response, 1], function(err) {
+          if (!err) {
+            const samMessage = {
+              id: this.lastID,
+              username: socket.username,
+              content: response,
+              is_from_sam: 1,
+              created_at: new Date().toISOString()
+            };
+            socket.emit('sam_response', samMessage);
+            console.log(`[SAM_REPLY] Mock response sent to ${socket.username}`);
+          }
+        });
+      }, 2000);
     });
   });
   
@@ -336,8 +254,7 @@ function startServer() {
   const PORT = process.env.PORT || 3000;
   server.listen(PORT, () => {
     console.log(`[SERVER_READY] Terminal active on port ${PORT}`);
-    console.log(`[MODE] Direct web admin interface enabled`);
-    console.log(`[ADMINS] ${Array.from(adminUsers).join(', ')}`);
+    console.log(`[MODE] Running without Discord integration for testing`);
   });
 }
 

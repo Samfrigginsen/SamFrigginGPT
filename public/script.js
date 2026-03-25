@@ -1,8 +1,10 @@
 const socket = io();
 let token = localStorage.getItem('token');
 let username = localStorage.getItem('username');
+let isAdmin = false;
 let isPainting = false;
 let paintEnabled = false;
+let selectedUser = '';
 
 const systemLogs = [
     '[SYSTEM_BOOT] Initializing terminal interface...',
@@ -122,9 +124,20 @@ function authenticateWithSocket() {
 function showChatInterface() {
     document.getElementById('authContainer').style.display = 'none';
     document.getElementById('chatContainer').style.display = 'block';
-    updateStatus(`[CONNECTED] User: ${username}`);
-    loadMessages();
-    checkPaintPermission();
+    
+    if (isAdmin) {
+        document.getElementById('adminPanel').style.display = 'block';
+        document.getElementById('userChat').style.display = 'none';
+        updateStatus(`[ADMIN_MODE] ${username}`);
+        loadAdminUsers();
+        setInterval(loadAdminUsers, 30000); // Refresh users every 30 seconds
+    } else {
+        document.getElementById('adminPanel').style.display = 'none';
+        document.getElementById('userChat').style.display = 'block';
+        updateStatus(`[CONNECTED] User: ${username}`);
+        loadMessages();
+        checkPaintPermission();
+    }
 }
 
 function loadMessages() {
@@ -172,6 +185,128 @@ function checkPaintPermission() {
         if (data.hasPermission) {
             enablePaintMode();
         }
+    });
+}
+
+function loadAdminUsers() {
+    fetch('/api/admin/users', {
+        headers: { 'Authorization': `Bearer ${token}` }
+    })
+    .then(res => res.json())
+    .then(users => {
+        const usersDiv = document.getElementById('adminUsers');
+        const userSelect = document.getElementById('userSelect');
+        
+        usersDiv.innerHTML = '';
+        userSelect.innerHTML = '<option value="">Select User...</option>';
+        
+        users.forEach(user => {
+            const userDiv = document.createElement('div');
+            userDiv.className = 'admin-user';
+            userDiv.textContent = `[${new Date(user.last_active).toLocaleTimeString()}] ${user.username}`;
+            userDiv.onclick = () => selectUser(user.username);
+            usersDiv.appendChild(userDiv);
+            
+            const option = document.createElement('option');
+            option.value = user.username;
+            option.textContent = user.username;
+            userSelect.appendChild(option);
+        });
+    })
+    .catch(err => {
+        console.error('[ERROR] Failed to load admin users');
+    });
+}
+
+function selectUser(username) {
+    selectedUser = username;
+    document.getElementById('userSelect').value = username;
+    loadUserMessages();
+}
+
+function loadUserMessages() {
+    const userSelect = document.getElementById('userSelect');
+    selectedUser = userSelect.value;
+    
+    if (!selectedUser) return;
+    
+    fetch(`/api/admin/messages/${selectedUser}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    })
+    .then(res => res.json())
+    .then(messages => {
+        const messagesDiv = document.getElementById('adminMessages');
+        messagesDiv.innerHTML = '';
+        messages.forEach(msg => addAdminMessage(msg));
+    })
+    .catch(err => {
+        console.error('[ERROR] Failed to load user messages');
+    });
+}
+
+function addAdminMessage(message) {
+    const messagesDiv = document.getElementById('adminMessages');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${message.is_from_sam ? 'sam' : ''}`;
+    
+    const sender = message.is_from_sam ? 'SAM' : message.username;
+    const timestamp = new Date(message.created_at).toLocaleTimeString();
+    
+    messageDiv.innerHTML = `<strong>[${timestamp}] ${sender}:</strong> ${message.content}`;
+    messagesDiv.appendChild(messageDiv);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+function sendAdminReply() {
+    const input = document.getElementById('adminReplyInput');
+    const content = input.value.trim();
+    
+    if (!content || !selectedUser) return;
+    
+    fetch('/api/admin/reply', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ username: selectedUser, content })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            addAdminMessage(data.message);
+            input.value = '';
+        } else {
+            console.error('[ERROR] Failed to send reply');
+        }
+    })
+    .catch(err => {
+        console.error('[ERROR] Failed to send reply');
+    });
+}
+
+function grantPaintPermission() {
+    const userSelect = document.getElementById('userSelect');
+    const targetUser = userSelect.value;
+    
+    if (!targetUser) return;
+    
+    fetch('/api/admin/grant-paint', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ username: targetUser })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            addSystemLog(`[PAINT_UNLOCK] Granted to ${targetUser}`);
+        }
+    })
+    .catch(err => {
+        console.error('[ERROR] Failed to grant paint permission');
     });
 }
 
@@ -244,6 +379,7 @@ canvas.addEventListener('mousemove', (e) => {
 // Socket event handlers
 socket.on('authenticated', (data) => {
     username = data.username;
+    isAdmin = data.isAdmin || false;
     showChatInterface();
 });
 
@@ -264,6 +400,18 @@ socket.on('sam_response', (message) => {
 
 socket.on('paint_permission_granted', () => {
     enablePaintMode();
+});
+
+socket.on('new_user_message', (data) => {
+    if (isAdmin) {
+        addSystemLog(`[NEW_MESSAGE] ${data.username}: ${data.content.substring(0, 30)}...`);
+        // Flash the admin panel
+        const panel = document.getElementById('adminPanel');
+        panel.style.borderColor = '#FF0000';
+        setTimeout(() => {
+            panel.style.borderColor = '#FFBF00';
+        }, 1000);
+    }
 });
 
 socket.on('paint_update', (data) => {
@@ -289,6 +437,12 @@ socket.on('error', (data) => {
 document.getElementById('messageInput').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
         sendMessage();
+    }
+});
+
+document.getElementById('adminReplyInput').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        sendAdminReply();
     }
 });
 
