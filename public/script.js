@@ -7,29 +7,28 @@ let paintEnabled = false;
 let selectedUser = '';
 
 const systemLogs = [
-    '[SYSTEM_BOOT] Initializing terminal interface...',
-    '[MEMORY_CHECK] 640K OK',
     '[DISK_CHECK] Found storage device',
+    '[MEMORY_CHECK] 640K OK',
+    '[SYSTEM_BOOT] Initializing terminal interface...',
     '[NETWORK_CHECK] Establishing connection...',
     '[AUTH_SUCCESS] User authenticated',
     '[SAM_NEURON_ACTIVE] Neural network online',
     '[LATENCY_HIGH_COFFEE_REQUIRED] System ready',
-    '[SECURITY_SCAN] All systems nominal',
-    '[THREAD_ROUTER] Discord integration active'
+    '[SECURITY_SCAN] All systems nominal'
 ];
 
 function addSystemLog(log) {
-    const logsContainer = document.getElementById('systemLogs');
+    const statusContainer = document.getElementById('systemStatus');
     const logLine = document.createElement('div');
-    logLine.className = 'log-line';
+    logLine.className = 'status-line';
     logLine.textContent = log;
-    logsContainer.appendChild(logLine);
+    statusContainer.appendChild(logLine);
     
-    if (logsContainer.children.length > 8) {
-        logsContainer.removeChild(logsContainer.firstChild);
+    if (statusContainer.children.length > 8) {
+        statusContainer.removeChild(statusContainer.firstChild);
     }
     
-    logsContainer.scrollTop = logsContainer.scrollHeight;
+    statusContainer.scrollTop = statusContainer.scrollHeight;
 }
 
 function animateSystemLogs() {
@@ -38,12 +37,8 @@ function animateSystemLogs() {
     });
 }
 
-function updateStatus(message) {
-    document.getElementById('status').textContent = message;
-}
-
 function showError(message) {
-    const errorDiv = document.getElementById('authError');
+    const errorDiv = document.getElementById('errorMessage');
     errorDiv.textContent = message;
     setTimeout(() => {
         errorDiv.textContent = '';
@@ -122,22 +117,19 @@ function authenticateWithSocket() {
 }
 
 function showChatInterface() {
-    document.getElementById('authContainer').style.display = 'none';
-    document.getElementById('chatContainer').style.display = 'block';
+    document.getElementById('authSection').style.display = 'none';
+    document.getElementById('chatSection').style.display = 'block';
     
     if (isAdmin) {
         document.getElementById('adminPanel').style.display = 'block';
-        document.getElementById('userChat').style.display = 'none';
-        updateStatus(`[ADMIN_MODE] ${username}`);
         loadAdminUsers();
-        setInterval(loadAdminUsers, 30000); // Refresh users every 30 seconds
+        setInterval(loadAdminUsers, 30000);
     } else {
         document.getElementById('adminPanel').style.display = 'none';
-        document.getElementById('userChat').style.display = 'block';
-        updateStatus(`[CONNECTED] User: ${username}`);
-        loadMessages();
-        checkPaintPermission();
     }
+    
+    loadMessages();
+    checkPaintPermission();
 }
 
 function loadMessages() {
@@ -154,7 +146,7 @@ function loadMessages() {
 }
 
 function addMessage(message) {
-    const messagesDiv = document.getElementById('messages');
+    const messagesDiv = document.getElementById('userMessages');
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${message.is_from_sam ? 'sam' : ''}`;
     
@@ -194,19 +186,11 @@ function loadAdminUsers() {
     })
     .then(res => res.json())
     .then(users => {
-        const usersDiv = document.getElementById('adminUsers');
         const userSelect = document.getElementById('userSelect');
         
-        usersDiv.innerHTML = '';
         userSelect.innerHTML = '<option value="">Select User...</option>';
         
         users.forEach(user => {
-            const userDiv = document.createElement('div');
-            userDiv.className = 'admin-user';
-            userDiv.textContent = `[${new Date(user.last_active).toLocaleTimeString()}] ${user.username}`;
-            userDiv.onclick = () => selectUser(user.username);
-            usersDiv.appendChild(userDiv);
-            
             const option = document.createElement('option');
             option.value = user.username;
             option.textContent = user.username;
@@ -216,12 +200,6 @@ function loadAdminUsers() {
     .catch(err => {
         console.error('[ERROR] Failed to load admin users');
     });
-}
-
-function selectUser(username) {
-    selectedUser = username;
-    document.getElementById('userSelect').value = username;
-    loadUserMessages();
 }
 
 function loadUserMessages() {
@@ -258,10 +236,16 @@ function addAdminMessage(message) {
 }
 
 function sendAdminReply() {
-    const input = document.getElementById('adminReplyInput');
-    const content = input.value.trim();
+    const userSelect = document.getElementById('userSelect');
+    const targetUser = userSelect.value;
     
-    if (!content || !selectedUser) return;
+    if (!targetUser) {
+        alert('Please select a user first');
+        return;
+    }
+    
+    const content = prompt('Enter your reply as SAM:');
+    if (!content) return;
     
     fetch('/api/admin/reply', {
         method: 'POST',
@@ -269,15 +253,12 @@ function sendAdminReply() {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ username: selectedUser, content })
+        body: JSON.stringify({ username: targetUser, content })
     })
     .then(res => res.json())
     .then(data => {
         if (data.success) {
             addAdminMessage(data.message);
-            input.value = '';
-        } else {
-            console.error('[ERROR] Failed to send reply');
         }
     })
     .catch(err => {
@@ -289,7 +270,10 @@ function grantPaintPermission() {
     const userSelect = document.getElementById('userSelect');
     const targetUser = userSelect.value;
     
-    if (!targetUser) return;
+    if (!targetUser) {
+        alert('Please select a user first');
+        return;
+    }
     
     fetch('/api/admin/grant-paint', {
         method: 'POST',
@@ -312,7 +296,7 @@ function grantPaintPermission() {
 
 function enablePaintMode() {
     paintEnabled = true;
-    document.getElementById('paintControls').classList.add('active');
+    document.getElementById('paintControls').style.display = 'block';
     addSystemLog('[PAINT_UNLOCK] Paint mode enabled');
 }
 
@@ -320,7 +304,6 @@ function togglePaint() {
     isPainting = !isPainting;
     const canvas = document.getElementById('paintCanvas');
     canvas.classList.toggle('active', isPainting);
-    updateStatus(isPainting ? '[PAINT_MODE] Drawing enabled' : `[CONNECTED] User: ${username}`);
 }
 
 function clearCanvas() {
@@ -405,12 +388,6 @@ socket.on('paint_permission_granted', () => {
 socket.on('new_user_message', (data) => {
     if (isAdmin) {
         addSystemLog(`[NEW_MESSAGE] ${data.username}: ${data.content.substring(0, 30)}...`);
-        // Flash the admin panel
-        const panel = document.getElementById('adminPanel');
-        panel.style.borderColor = '#FF0000';
-        setTimeout(() => {
-            panel.style.borderColor = '#FFBF00';
-        }, 1000);
     }
 });
 
@@ -437,12 +414,6 @@ socket.on('error', (data) => {
 document.getElementById('messageInput').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
         sendMessage();
-    }
-});
-
-document.getElementById('adminReplyInput').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-        sendAdminReply();
     }
 });
 

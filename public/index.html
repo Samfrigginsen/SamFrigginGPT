@@ -3,10 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SAMFRIGGINGPT</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+    <title>GERALE FRIGGIN GPT</title>
     <style>
         * {
             margin: 0;
@@ -17,42 +14,56 @@
         body {
             background: #000000;
             color: #00FF00;
-            font-family: 'Courier Prime', 'Courier New', monospace;
-            font-size: 14px;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
             overflow: hidden;
-            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
         }
         
         .terminal-container {
             width: 90vw;
             max-width: 800px;
             height: 80vh;
-            margin: 10vh auto;
-            border: 3px solid #00FF00;
+            border: 4px solid #00FF00;
             background: #000000;
-            position: relative;
-            z-index: 10;
-        }
-        
-        .ascii-header {
-            text-align: center;
             padding: 20px;
-            border-bottom: 2px solid #00FF00;
-            white-space: pre;
-            font-size: 12px;
-            line-height: 1.2;
+            position: relative;
         }
         
-        .system-logs {
-            height: 100px;
-            overflow: hidden;
-            border-bottom: 2px solid #00FF00;
-            padding: 10px;
-            font-size: 10px;
+        .title-section {
+            text-align: center;
+            margin-bottom: 20px;
         }
         
-        .log-line {
-            height: 12px;
+        .main-title {
+            font-size: 48px;
+            font-weight: bold;
+            letter-spacing: 8px;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px #00FF00;
+        }
+        
+        .subtitle {
+            font-size: 18px;
+            letter-spacing: 4px;
+            margin-bottom: 30px;
+        }
+        
+        .system-status {
+            border: 2px solid #00FF00;
+            padding: 15px;
+            margin-bottom: 20px;
+            height: 150px;
+            overflow-y: auto;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        
+        .status-line {
+            margin: 3px 0;
             opacity: 0;
             animation: fadeIn 0.5s forwards;
         }
@@ -61,53 +72,79 @@
             to { opacity: 1; }
         }
         
-        .auth-container, .chat-container {
-            height: calc(100% - 250px);
-            padding: 20px;
-            overflow-y: auto;
-        }
-        
-        .auth-form {
+        .auth-section {
             text-align: center;
+            padding: 20px;
+            border: 2px solid #00FF00;
         }
         
-        .auth-form input {
+        .auth-title {
+            font-size: 20px;
+            margin-bottom: 15px;
+            color: #00FF00;
+        }
+        
+        .error-message {
+            color: #FF0000;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+        
+        .input-group {
+            margin: 10px 0;
+        }
+        
+        .input-field {
             background: #000000;
             border: 2px solid #00FF00;
             color: #00FF00;
-            padding: 8px;
-            margin: 5px;
-            font-family: inherit;
+            padding: 8px 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
             width: 200px;
+            margin: 5px;
         }
         
-        .auth-form button {
+        .input-field:focus {
+            outline: none;
+            box-shadow: 0 0 5px #00FF00;
+        }
+        
+        .button {
             background: #000000;
             border: 2px solid #00FF00;
             color: #00FF00;
-            padding: 8px 20px;
-            margin: 10px;
-            font-family: inherit;
+            padding: 8px 25px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin: 10px 5px;
             cursor: pointer;
+            text-transform: uppercase;
         }
         
-        .auth-form button:hover {
+        .button:hover {
             background: #00FF00;
             color: #000000;
         }
         
-        .messages {
-            height: calc(100% - 60px);
+        .chat-section {
+            display: none;
+            height: calc(100% - 200px);
+        }
+        
+        .messages-container {
+            border: 2px solid #00FF00;
+            height: 300px;
             overflow-y: auto;
-            border: 1px solid #00FF00;
             padding: 10px;
-            margin-bottom: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
         }
         
         .message {
-            margin: 5px 0;
+            margin: 8px 0;
             padding: 5px;
-            border-left: 2px solid #00FF00;
+            border-left: 3px solid #00FF00;
             padding-left: 10px;
         }
         
@@ -116,36 +153,73 @@
             color: #FFBF00;
         }
         
-        .typing-indicator {
-            color: #FFBF00;
-            font-style: italic;
-        }
-        
         .input-container {
             display: flex;
             gap: 10px;
+            align-items: center;
         }
         
-        .input-container input {
+        .message-input {
             flex: 1;
             background: #000000;
             border: 2px solid #00FF00;
             color: #00FF00;
-            padding: 8px;
-            font-family: inherit;
+            padding: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
         }
         
-        .input-container button {
+        .send-button {
             background: #000000;
             border: 2px solid #00FF00;
             color: #00FF00;
-            padding: 8px 20px;
-            font-family: inherit;
+            padding: 10px 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
             cursor: pointer;
         }
         
-        .input-container button:hover {
+        .send-button:hover {
             background: #00FF00;
+            color: #000000;
+        }
+        
+        .admin-panel {
+            display: none;
+            border: 2px solid #FFBF00;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .admin-title {
+            color: #FFBF00;
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .user-select {
+            background: #000000;
+            border: 1px solid #FFBF00;
+            color: #FFBF00;
+            padding: 5px;
+            font-family: 'Courier New', monospace;
+            margin-right: 10px;
+        }
+        
+        .admin-button {
+            background: #000000;
+            border: 1px solid #FFBF00;
+            color: #FFBF00;
+            padding: 5px 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            cursor: pointer;
+            margin: 2px;
+        }
+        
+        .admin-button:hover {
+            background: #FFBF00;
             color: #000000;
         }
         
@@ -157,20 +231,6 @@
             padding: 10px;
             background: #000000;
             display: none;
-            z-index: 20;
-        }
-        
-        .paint-controls.active {
-            display: block;
-        }
-        
-        .paint-controls button, .paint-controls input {
-            background: #000000;
-            border: 1px solid #FFBF00;
-            color: #FFBF00;
-            margin: 2px;
-            font-family: inherit;
-            cursor: pointer;
         }
         
         .paint-canvas {
@@ -179,124 +239,12 @@
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 5;
+            z-index: 1;
             pointer-events: none;
         }
         
         .paint-canvas.active {
             pointer-events: all;
-        }
-        
-        .admin-panel {
-            border: 2px solid #FFBF00;
-            margin-bottom: 10px;
-            padding: 10px;
-        }
-        
-        .admin-header {
-            color: #FFBF00;
-            text-align: center;
-            margin-bottom: 10px;
-            font-weight: bold;
-        }
-        
-        .admin-users {
-            height: 100px;
-            overflow-y: auto;
-            border: 1px solid #FFBF00;
-            margin-bottom: 10px;
-            padding: 5px;
-            font-size: 12px;
-        }
-        
-        .admin-user {
-            cursor: pointer;
-            padding: 2px;
-            border-left: 2px solid #00FF00;
-            margin: 2px 0;
-            padding-left: 5px;
-        }
-        
-        .admin-user:hover {
-            background: #00FF00;
-            color: #000000;
-        }
-        
-        .admin-user-select {
-            display: flex;
-            gap: 5px;
-            margin-bottom: 10px;
-        }
-        
-        .admin-user-select select, .admin-user-select button {
-            background: #000000;
-            border: 1px solid #FFBF00;
-            color: #FFBF00;
-            font-family: inherit;
-            padding: 5px;
-        }
-        
-        .admin-user-select button:hover {
-            background: #FFBF00;
-            color: #000000;
-        }
-        
-        .admin-messages {
-            height: 200px;
-            overflow-y: auto;
-            border: 1px solid #FFBF00;
-            margin-bottom: 10px;
-            padding: 5px;
-        }
-        
-        .admin-reply {
-            display: flex;
-            gap: 5px;
-        }
-        
-        .admin-reply input {
-            flex: 1;
-            background: #000000;
-            border: 1px solid #FFBF00;
-            color: #FFBF00;
-            font-family: inherit;
-            padding: 5px;
-        }
-        
-        .admin-reply button {
-            background: #000000;
-            border: 1px solid #FFBF00;
-            color: #FFBF00;
-            font-family: inherit;
-            padding: 5px 10px;
-            cursor: pointer;
-        }
-        
-        .admin-reply button:hover {
-            background: #FFBF00;
-            color: #000000;
-        }
-        
-        .new-message-alert {
-            color: #FF0000;
-            animation: blink 1s infinite;
-        }
-        
-        @keyframes blink {
-            0%, 50% { opacity: 1; }
-            51%, 100% { opacity: 0; }
-        }
-        
-        .error {
-            color: #FF0000;
-            text-align: center;
-            margin: 10px 0;
-        }
-        
-        .status {
-            text-align: center;
-            padding: 10px;
-            border-bottom: 1px solid #00FF00;
         }
     </style>
 </head>
@@ -304,67 +252,61 @@
     <canvas id="paintCanvas" class="paint-canvas"></canvas>
     
     <div class="terminal-container">
-        <div class="ascii-header">
- ██████╗ ███████╗██████╗  █████╗ ██╗     ███████╗
-██╔════╝ ██╔════╝██╔══██╗██╔══██╗██║     ██╔════╝
-██║  ███╗█████╗  ██████╔╝███████║██║     █████╗  
-██║   ██║██╔══╝  ██╔══██╗██╔══██║██║     ██╔══╝  
-╚██████╔╝███████╗██║  ██║██║  ██║███████╗███████╗
- ╚═════╝ ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚══════╝
-                                                   
-     FRIGGIN GPT - TERMINAL INTERFACE v1.0
+        <div class="title-section">
+            <div class="main-title">GERALE</div>
+            <div class="subtitle">FRIGGIN GPT - TERMINAL INTERFACE v1.0</div>
         </div>
         
-        <div class="system-logs" id="systemLogs"></div>
-        
-        <div class="status" id="status">[SYSTEM_BOOTING...]</div>
+        <div class="system-status" id="systemStatus">
+            <div class="status-line">[DISK_CHECK] Found storage device</div>
+            <div class="status-line">[MEMORY_CHECK] 640K OK</div>
+            <div class="status-line">[SYSTEM_BOOT] Initializing terminal interface...</div>
+            <div class="status-line">[NETWORK_CHECK] Establishing connection...</div>
+            <div class="status-line">[AUTH_SUCCESS] User authenticated</div>
+            <div class="status-line">[SAM_NEURON_ACTIVE] Neural network online</div>
+            <div class="status-line">[LATENCY_HIGH_COFFEE_REQUIRED] System ready</div>
+            <div class="status-line">[SECURITY_SCAN] All systems nominal</div>
+        </div>
         
         <div class="paint-controls" id="paintControls">
             <div>PAINT MODE</div>
             <input type="color" id="colorPicker" value="#FF0000">
-            <button onclick="togglePaint()">TOGGLE PAINT</button>
-            <button onclick="clearCanvas()">CLEAR</button>
+            <button class="admin-button" onclick="togglePaint()">TOGGLE PAINT</button>
+            <button class="admin-button" onclick="clearCanvas()">CLEAR</button>
         </div>
         
-        <div class="auth-container" id="authContainer">
-            <div class="auth-form">
-                <div id="authError" class="error"></div>
-                <h2>[AUTH_REQUIRED]</h2>
-                <input type="text" id="username" placeholder="USERNAME" maxlength="20">
-                <br>
-                <input type="password" id="password" placeholder="PASSWORD">
-                <br>
-                <button onclick="register()">REGISTER</button>
-                <button onclick="login()">LOGIN</button>
+        <div class="auth-section" id="authSection">
+            <div class="auth-title">Please login or register</div>
+            <div class="error-message" id="errorMessage"></div>
+            <div class="input-group">
+                <input type="text" id="username" class="input-field" placeholder="USERNAME" maxlength="20">
             </div>
+            <div class="input-group">
+                <input type="password" id="password" class="input-field" placeholder="PASSWORD">
+            </div>
+            <button class="button" onclick="register()">REGISTER</button>
+            <button class="button" onclick="login()">LOGIN</button>
         </div>
         
-        <div class="chat-container" id="chatContainer" style="display: none;">
-            <div class="admin-panel" id="adminPanel" style="display: none;">
-                <div class="admin-header">[ADMIN PANEL]</div>
-                <div class="admin-users" id="adminUsers"></div>
-                <div class="admin-chat">
-                    <div class="admin-user-select">
-                        <select id="userSelect">
-                            <option value="">Select User...</option>
-                        </select>
-                        <button onclick="loadUserMessages()">LOAD</button>
-                        <button onclick="grantPaintPermission()">GRANT PAINT</button>
-                    </div>
-                    <div class="admin-messages" id="adminMessages"></div>
-                    <div class="admin-reply">
-                        <input type="text" id="adminReplyInput" placeholder="Reply as SAM...">
-                        <button onclick="sendAdminReply()">REPLY</button>
-                    </div>
+        <div class="chat-section" id="chatSection">
+            <div class="admin-panel" id="adminPanel">
+                <div class="admin-title">[ADMIN PANEL]</div>
+                <div>
+                    <select id="userSelect" class="user-select">
+                        <option value="">Select User...</option>
+                    </select>
+                    <button class="admin-button" onclick="loadUserMessages()">LOAD</button>
+                    <button class="admin-button" onclick="sendAdminReply()">REPLY</button>
+                    <button class="admin-button" onclick="grantPaintPermission()">GRANT PAINT</button>
                 </div>
+                <div class="messages-container" id="adminMessages" style="margin-top: 10px;"></div>
             </div>
             
-            <div class="user-chat" id="userChat">
-                <div class="messages" id="messages"></div>
-                <div class="input-container">
-                    <input type="text" id="messageInput" placeholder="SAM IS IDLE. SEND A PACKET." maxlength="500">
-                    <button onclick="sendMessage()">SEND</button>
-                </div>
+            <div class="messages-container" id="userMessages"></div>
+            
+            <div class="input-container">
+                <input type="text" id="messageInput" class="message-input" placeholder="SAM IS IDLE. SEND A PACKET." maxlength="500">
+                <button class="send-button" onclick="sendMessage()">SEND</button>
             </div>
         </div>
     </div>
