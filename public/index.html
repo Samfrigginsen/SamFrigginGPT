@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAMFRIGGINGPT</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #000000;
+            color: #00FF00;
+            font-family: 'Courier Prime', 'Courier New', monospace;
+            font-size: 14px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .terminal-container {
+            width: 90vw;
+            max-width: 800px;
+            height: 80vh;
+            margin: 10vh auto;
+            border: 3px solid #00FF00;
+            background: #000000;
+            position: relative;
+            z-index: 10;
+        }
+        
+        .ascii-header {
+            text-align: center;
+            padding: 20px;
+            border-bottom: 2px solid #00FF00;
+            white-space: pre;
+            font-size: 12px;
+            line-height: 1.2;
+        }
+        
+        .system-logs {
+            height: 100px;
+            overflow: hidden;
+            border-bottom: 2px solid #00FF00;
+            padding: 10px;
+            font-size: 10px;
+        }
+        
+        .log-line {
+            height: 12px;
+            opacity: 0;
+            animation: fadeIn 0.5s forwards;
+        }
+        
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+        
+        .auth-container, .chat-container {
+            height: calc(100% - 250px);
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .auth-form {
+            text-align: center;
+        }
+        
+        .auth-form input {
+            background: #000000;
+            border: 2px solid #00FF00;
+            color: #00FF00;
+            padding: 8px;
+            margin: 5px;
+            font-family: inherit;
+            width: 200px;
+        }
+        
+        .auth-form button {
+            background: #000000;
+            border: 2px solid #00FF00;
+            color: #00FF00;
+            padding: 8px 20px;
+            margin: 10px;
+            font-family: inherit;
+            cursor: pointer;
+        }
+        
+        .auth-form button:hover {
+            background: #00FF00;
+            color: #000000;
+        }
+        
+        .messages {
+            height: calc(100% - 60px);
+            overflow-y: auto;
+            border: 1px solid #00FF00;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .message {
+            margin: 5px 0;
+            padding: 5px;
+            border-left: 2px solid #00FF00;
+            padding-left: 10px;
+        }
+        
+        .message.sam {
+            border-left-color: #FFBF00;
+            color: #FFBF00;
+        }
+        
+        .typing-indicator {
+            color: #FFBF00;
+            font-style: italic;
+        }
+        
+        .input-container {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .input-container input {
+            flex: 1;
+            background: #000000;
+            border: 2px solid #00FF00;
+            color: #00FF00;
+            padding: 8px;
+            font-family: inherit;
+        }
+        
+        .input-container button {
+            background: #000000;
+            border: 2px solid #00FF00;
+            color: #00FF00;
+            padding: 8px 20px;
+            font-family: inherit;
+            cursor: pointer;
+        }
+        
+        .input-container button:hover {
+            background: #00FF00;
+            color: #000000;
+        }
+        
+        .paint-controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            border: 2px solid #FFBF00;
+            padding: 10px;
+            background: #000000;
+            display: none;
+            z-index: 20;
+        }
+        
+        .paint-controls.active {
+            display: block;
+        }
+        
+        .paint-controls button, .paint-controls input {
+            background: #000000;
+            border: 1px solid #FFBF00;
+            color: #FFBF00;
+            margin: 2px;
+            font-family: inherit;
+            cursor: pointer;
+        }
+        
+        .paint-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 5;
+            pointer-events: none;
+        }
+        
+        .paint-canvas.active {
+            pointer-events: all;
+        }
+        
+        .error {
+            color: #FF0000;
+            text-align: center;
+            margin: 10px 0;
+        }
+        
+        .status {
+            text-align: center;
+            padding: 10px;
+            border-bottom: 1px solid #00FF00;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="paintCanvas" class="paint-canvas"></canvas>
+    
+    <div class="terminal-container">
+        <div class="ascii-header">
+ ██████╗ ███████╗██████╗  █████╗ ██╗     ███████╗
+██╔════╝ ██╔════╝██╔══██╗██╔══██╗██║     ██╔════╝
+██║  ███╗█████╗  ██████╔╝███████║██║     █████╗  
+██║   ██║██╔══╝  ██╔══██╗██╔══██║██║     ██╔══╝  
+╚██████╔╝███████╗██║  ██║██║  ██║███████╗███████╗
+ ╚═════╝ ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚══════╝
+                                                   
+     FRIGGIN GPT - TERMINAL INTERFACE v1.0
+        </div>
+        
+        <div class="system-logs" id="systemLogs"></div>
+        
+        <div class="status" id="status">[SYSTEM_BOOTING...]</div>
+        
+        <div class="paint-controls" id="paintControls">
+            <div>PAINT MODE</div>
+            <input type="color" id="colorPicker" value="#FF0000">
+            <button onclick="togglePaint()">TOGGLE PAINT</button>
+            <button onclick="clearCanvas()">CLEAR</button>
+        </div>
+        
+        <div class="auth-container" id="authContainer">
+            <div class="auth-form">
+                <div id="authError" class="error"></div>
+                <h2>[AUTH_REQUIRED]</h2>
+                <input type="text" id="username" placeholder="USERNAME" maxlength="20">
+                <br>
+                <input type="password" id="password" placeholder="PASSWORD">
+                <br>
+                <button onclick="register()">REGISTER</button>
+                <button onclick="login()">LOGIN</button>
+            </div>
+        </div>
+        
+        <div class="chat-container" id="chatContainer" style="display: none;">
+            <div class="messages" id="messages"></div>
+            <div class="input-container">
+                <input type="text" id="messageInput" placeholder="SAM IS IDLE. SEND A PACKET." maxlength="500">
+                <button onclick="sendMessage()">SEND</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
